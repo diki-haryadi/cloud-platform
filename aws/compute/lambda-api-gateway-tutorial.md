@@ -106,7 +106,7 @@ def lambda_handler(event, context):
 ### 3.1 Using curl
 ```bash
 # Test GET request
-curl -X POST https://[your-api-id].execute-api.[region].amazonaws.com/dev/demo \
+curl -X POST https://e8qzt0b842.execute-api.ap-southeast-2.amazonaws.com/dev/demo \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello API Gateway!"}'
 ```
