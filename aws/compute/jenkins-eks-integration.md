@@ -75,11 +75,22 @@ This guide provides two approaches to integrate Jenkins with Amazon EKS:
        agent any
        
        environment {
-           CLUSTER_NAME = 'your-eks-cluster-name'
-           REGION = 'your-aws-region'
+           CLUSTER_NAME = 'my-eks-cluster'
+           REGION = 'ap-southeast-2'
        }
        
        stages {
+           stage('Install AWS CLI') {
+               steps {
+                   sh '''
+                       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                       unzip awscliv2.zip
+                       sudo ./aws/install
+                       aws --version
+                   '''
+               }
+           }
+           
            stage('Configure kubectl') {
                steps {
                    withAWS(credentials: 'aws-eks-credentials', region: REGION) {
@@ -100,6 +111,70 @@ This guide provides two approaches to integrate Jenkins with Amazon EKS:
                        '''
                    }
                }
+           }
+       }
+   }
+   ```
+## Build User Vars Plugin Configuration
+
+### Step 1: Install Build User Vars Plugin
+1. Navigate to Jenkins Dashboard > Manage Jenkins > Manage Plugins
+2. Go to the 'Available' tab
+3. Search for "Build User Vars Plugin"
+4. Select the plugin and click "Install without restart"
+
+### Step 2: Configure Pipeline with Build User Vars
+1. Modify your Jenkins pipeline to include the build user variables:
+   ```groovy
+   pipeline {
+       agent any
+       
+       environment {
+           CLUSTER_NAME = 'my-eks-cluster'
+           REGION = 'ap-southeast-2'
+       }
+       
+       stages {
+           stage('Get User Info') {
+               steps {
+                   wrap([$class: 'BuildUser']) {
+                       script {
+                           // Access build user variables
+                           echo "Build User ID: ${env.BUILD_USER_ID}"
+                           echo "Build User: ${env.BUILD_USER}"
+                           echo "Build User Email: ${env.BUILD_USER_EMAIL}"
+                       }
+                   }
+               }
+           }
+           
+           // Your existing stages...
+       }
+   }
+   ```
+
+### Step 3: Available Variables
+The plugin provides the following variables:
+- BUILD_USER: Full name of the user who started the build
+- BUILD_USER_ID: User ID of the user who started the build
+- BUILD_USER_EMAIL: Email address of the user who started the build
+- BUILD_USER_FIRST_NAME: First name of the user
+- BUILD_USER_LAST_NAME: Last name of the user
+
+### Step 4: Usage Examples
+1. Logging user actions:
+   ```groovy
+   wrap([$class: 'BuildUser']) {
+       sh "echo 'Deployment initiated by: ${env.BUILD_USER}' >> deployment.log"
+   }
+   ```
+
+2. Conditional execution based on user:
+   ```groovy
+   wrap([$class: 'BuildUser']) {
+       script {
+           if (env.BUILD_USER_ID == 'admin') {
+               // Execute admin-only tasks
            }
        }
    }
